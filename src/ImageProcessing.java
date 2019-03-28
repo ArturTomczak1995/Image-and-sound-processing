@@ -6,53 +6,49 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.GridPane;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import java.io.File;
-
+import java.util.Arrays;
 
 public class ImageProcessing extends Application {
-
     private static Image image;
-    private static int total_pixels;
     private static int[][] ColorsBeforeFiltration;
-    private static TextField brighter;
-    private static TextField darker;
-    private GridPane grid = new GridPane();
-    private static int contrast = 10;
-    private static int brightness = 0;
-    private static int negative = 0;
-    private int negativeCoefficient = -1;
-    private int[][] filter;
-    private int maskSize;
 
-
-    private int[][] mask3x3 = {
-            {1, 1, 1},
-            {1, 1, 1},
-            {1, 1, 1}
-    };
-
-    private int[][] mask5x5 = new int[][]{
-            {1, 1, 1, 1, 1},
-            {1, 1, 1, 1, 1},
-            {1, 1, 1, 1, 1},
-            {1, 1, 1, 1, 1},
-            {1, 1, 1, 1, 1}
-    };
-
-    
+    private int[][] getMask(int width, int height) {
+        int[][] mask = new int[width][height];
+        for (int i = 0; i < height; i++) {
+            Arrays.fill(mask[i], 1);
+        }
+        return mask;
+    }
 
     public static void main(String[] args) {
         launch(args);
     }
 
+    private static Image image() {
+        File file = new CommonMethods().file("All Images", "*.*");
+        image = new Image(file.toURI().toString());
+        System.out.println(file);
+        return image;
+    }
+
+    private ImageView imageView(Image image) {
+        ImageView imageView = new ImageView();
+        imageView.setImage(image);
+        imageView.setFitWidth(400);
+        imageView.setPreserveRatio(true);
+        imageView.setSmooth(true);
+        imageView.setCache(true);
+        return imageView;
+    }
+
     private void pixelReader() {
         PixelReader pixelReader = image.getPixelReader();
+        int total_pixels = (int) (image.getHeight() * image.getWidth());
         System.out.println();
         System.out.println("Image Height: " + image.getHeight() + " Image Width: "
                 + image.getWidth() + " Pixel Format: " + pixelReader.getPixelFormat());
-        total_pixels = (int) image.getHeight() * (int) image.getWidth();
         int i = 0;
         ColorsBeforeFiltration = new int[total_pixels][3];
         for (int readY = 0; readY < image.getHeight(); readY++) {
@@ -73,32 +69,27 @@ public class ImageProcessing extends Application {
     private Image getImageFromData() {
         WritableImage wr = new WritableImage((int)image.getWidth(), (int)image.getHeight());
         PixelWriter pw = wr.getPixelWriter();
-
+        int total_pixels = (int) (image.getHeight() * image.getWidth());
         for (int i = 0; i < total_pixels; i++) {
-
             int Red = ColorsBeforeFiltration[i][0];
             int Green = ColorsBeforeFiltration[i][1];
             int Blue = ColorsBeforeFiltration[i][2];
 
-            if (Red >= 225) {
-                Red = 225;
-            }
-            if (Green >= 225) {
-                Green = 225;
-            }
-            if (Blue >= 225) {
-                Blue = 225;
+            for (int j = 0; j < ColorsBeforeFiltration[i].length; j++) {
+                int color;
+//                switch (j) {
+//                    case (j = 0) {
+//                        color =
+//                    }
+//                }
+                if (ColorsBeforeFiltration[i][j] > 255 ) {
+                    ColorsBeforeFiltration[i][j] = 255;
+                } else if (ColorsBeforeFiltration[i][j] < 0) {
+                    ColorsBeforeFiltration[i][j] = 0;
+                }
             }
 
-            if (Red < 0) {
-                Red = 0;
-            }
-            if (Green < 0) {
-                Green = 0;
-            }
-            if (Blue < 0) {
-                Blue = 0;
-            }
+
 
             pw.setArgb(i % (int)image.getWidth(), i/(int)image.getHeight(), (0xFF << 24) | Red << 16 | Green << 8 | Blue);
         }
@@ -107,10 +98,10 @@ public class ImageProcessing extends Application {
     }
 
 
-    private void maskFiltration(){
+    private void maskFiltration(int maskSize, int[][] filter){
         int height = (int) image.getHeight();
         int width = (int) image.getWidth();
-
+        int total_pixels = (int) (image.getHeight() * image.getWidth());
             for (int i = 0; i < total_pixels; i++) {
 
                 int x = i % width;
@@ -140,7 +131,8 @@ public class ImageProcessing extends Application {
         }
     }
 
-    private void Brightness() {
+    private void Brightness(int brightness) {
+        int total_pixels = (int) (image.getHeight() * image.getWidth());
         for (int i = 0; i < total_pixels; i++) {
             int red = ColorsBeforeFiltration[i][0] + brightness;
             int green = ColorsBeforeFiltration[i][1] + brightness;
@@ -153,7 +145,8 @@ public class ImageProcessing extends Application {
         }
     }
 
-    private void Contrast() {
+    private void Contrast(int contrast) {
+        int total_pixels = (int) (image.getHeight() * image.getWidth());
         for (int i = 0; i < total_pixels; i++) {
 
             int red = ColorsBeforeFiltration[i][0];
@@ -176,8 +169,8 @@ public class ImageProcessing extends Application {
 
     }
 
-    private void NegativePositive() {
-
+    private void NegativePositive(int negative, int negativeCoefficient) {
+        int total_pixels = (int) (image.getHeight() * image.getWidth());
         for (int i = 0; i < total_pixels; i++) {
             int red = ColorsBeforeFiltration[i][0];
             int green = ColorsBeforeFiltration[i][1];
@@ -203,26 +196,22 @@ public class ImageProcessing extends Application {
         return sum;
     }
 
-    private static Image image() {
-        FileChooser fileChooser = new FileChooser();
-        Stage primaryStage = new Stage();
-        setExtFilters(fileChooser);
-        File path = fileChooser.showOpenDialog(primaryStage);
-        image = new Image(path.toURI().toString());
-        System.out.println(path);
-
-        return image;
-    }
-
-    private static void setExtFilters(FileChooser chooser){
-        chooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Images", "*.*"),
-                new FileChooser.ExtensionFilter("PNG", "*.png")
-        );
+    private void AddImg(GridPane grid) {
+        ImageView imageView2 = new ImageView();
+        imageView2.setImage(getImageFromData());
+        imageView2.setFitWidth(400);
+        imageView2.setPreserveRatio(true);
+        imageView2.setSmooth(true);
+        imageView2.setCache(true);
+        GridPane.setConstraints(imageView2, 1, 0);
+        grid.getChildren().add(imageView2);
     }
 
     @Override
     public void start(Stage primaryStage) {
+        GridPane grid = new GridPane();
+
+
         primaryStage.setTitle("Edycja Obrazu");
 
         grid.setPadding(new Insets(10, 10, 10, 10));
@@ -230,78 +219,69 @@ public class ImageProcessing extends Application {
         grid.setHgap(10);
 
 //        final FileChooser fileChooser = new FileChooser();
-        Button fileButton = new Button("Wybierz plik");
+        Button fileButton = new Button("New file");
         GridPane.setConstraints(fileButton, 0, 1);
         fileButton.setOnAction(e->{
-            ImageView imageView = new ImageView();
-            imageView.setImage(image());
-            imageView.setFitWidth(400);
-            imageView.setPreserveRatio(true);
-            imageView.setSmooth(true);
-            imageView.setCache(true);
-            pixelReader();
+            Image image = image();
+            ImageView imageView = imageView(image);
             GridPane.setConstraints(imageView, 0, 0);
             grid.getChildren().add(imageView);
+            pixelReader();
         });
 
+
+        TextField brighter = new TextField("0");
+        GridPane.setConstraints(brighter, 0, 3);
 
         Button brighterButton = new Button("Jasniej/Ciemniej");
         GridPane.setConstraints(brighterButton, 0, 2);
         brighterButton.setOnAction(e-> {
-            brightness = Integer.parseInt(brighter.getText());
-            Brightness();
-            AddImg();
+            int brightness = Integer.parseInt(brighter.getText());
+            Brightness(brightness);
+            AddImg(grid);
         });
+
+        TextField darker = new TextField("10");
+        GridPane.setConstraints(darker, 1, 3);
 
         Button contrastButton = new Button("Contrast");
         GridPane.setConstraints(contrastButton, 1, 2);
         contrastButton.setOnAction(e-> {
-            contrast = Integer.parseInt(darker.getText());
-            Contrast();
-            AddImg();
+            int contrast = Integer.parseInt(darker.getText());
+            Contrast(contrast);
+            AddImg(grid);
         });
 
         //blue = negative - negativeCoefficient*blue;
-        Button negativeButton = new Button("Negatyw/Pozytyw");
+        Button negativeButton = new Button("Negative");
         GridPane.setConstraints(negativeButton, 0, 4);
         negativeButton.setOnAction(e-> {
-            NegativePositive();
-            if(negativeCoefficient == -1){
-                negative = 225;
-                negativeCoefficient = 1;
-            }
-            else if (negativeCoefficient == 1){
-                negative = 255- negative;
-                negativeCoefficient = -1;
-            }
-            AddImg();
+            int negative = 255;
+            int negativeCoefficient = 1;
+            NegativePositive(negative, negativeCoefficient);
+            AddImg(grid);
         });
 
         Button filterAvg3x3 = new Button("Filtr Srednia 3x3");
         GridPane.setConstraints(filterAvg3x3, 1, 4);
         filterAvg3x3.setOnAction(e-> {
-
-                filter = mask3x3;
-                maskSize = 1;
-                maskFiltration();
-                AddImg();
+            int[][] filter = getMask(3,3);
+            int maskSize = 1;
+            maskFiltration(maskSize, filter);
+            AddImg(grid);
         });
 
         Button filterAvg5x5 = new Button("Filtr Srednia 9x9");
         GridPane.setConstraints(filterAvg5x5, 2, 4);
         filterAvg5x5.setOnAction(e-> {
 
-                filter = mask5x5;
-                maskSize = 2;
-            maskFiltration();
-                AddImg();
+            int[][] filter = getMask(5,5);
+            int maskSize = 2;
+            maskFiltration(maskSize, filter);
+            AddImg(grid);
         });
 
-        brighter = new TextField("0");
-        GridPane.setConstraints(brighter, 0, 3);
 
-        darker = new TextField("10");
-        GridPane.setConstraints(darker, 1, 3);
 
 
         TextField Input1 = new TextField("1");
@@ -336,14 +316,14 @@ public class ImageProcessing extends Application {
 
         filterButton.setOnAction(e-> {
 
-            filter = new int[][] {
+            int[][] filter = new int[][] {
                     {Integer.parseInt(Input1.getText()), Integer.parseInt(Input2.getText()), Integer.parseInt(Input3.getText())},
                     {Integer.parseInt(Input4.getText()), Integer.parseInt(Input5.getText()), Integer.parseInt(Input6.getText())},
                     {Integer.parseInt(Input7.getText()), Integer.parseInt(Input8.getText()), Integer.parseInt(Input9.getText())}
             };
-                maskSize = 1;
-            maskFiltration();
-                AddImg();
+            int maskSize = 1;
+            maskFiltration(maskSize, filter);
+                AddImg(grid);
         });
 
         grid.getChildren().addAll(fileButton,brighterButton,brighter,contrastButton, darker,negativeButton,filterAvg3x3,
@@ -351,17 +331,6 @@ public class ImageProcessing extends Application {
         Scene scene = new Scene(grid, 850, 600);
         primaryStage.setScene(scene);
         primaryStage.show();
-    }
-
-    private void AddImg() {
-        ImageView imageView2 = new ImageView();
-        imageView2.setImage(getImageFromData());
-        imageView2.setFitWidth(400);
-        imageView2.setPreserveRatio(true);
-        imageView2.setSmooth(true);
-        imageView2.setCache(true);
-        GridPane.setConstraints(imageView2, 1, 0);
-        grid.getChildren().add(imageView2);
     }
 
 }

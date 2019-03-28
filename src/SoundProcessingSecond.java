@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -17,11 +16,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.stage.FileChooser.ExtensionFilter;
-
 import javax.sound.sampled.*;
+import static javafx.scene.layout.GridPane.*;
 
 public class SoundProcessingSecond extends Application {
     private static File file;
@@ -33,10 +30,7 @@ public class SoundProcessingSecond extends Application {
     }
 
     private static void SoundFile() {
-        FileChooser fileChooser = new FileChooser();
-        Stage primaryStage = new Stage();
-        fileChooser.getExtensionFilters().addAll(new ExtensionFilter("wav", "*.wav"));
-        file = fileChooser.showOpenDialog(primaryStage);
+        file = new CommonMethods().file("wav", "*.wav");
         System.out.println(file);
     }
 
@@ -131,7 +125,6 @@ public class SoundProcessingSecond extends Application {
             AudioFormat format = audioInputStream.getFormat();
             long frames = audioInputStream.getFrameLength();
             durationInSeconds = ((double) frames + 0.0D) / (double) format.getFrameRate();
-
         } catch (UnsupportedAudioFileException | IOException e) {
             e.printStackTrace();
         }
@@ -184,13 +177,12 @@ public class SoundProcessingSecond extends Application {
     private void groupFrequencies() {
         double[] alternatingFrequency = wholeFrequencies();
         int[] array = new int[alternatingFrequency.length];
-
+        Map<Integer, Integer> hm = new HashMap<>(); ///??
         for (int i = 0; i < alternatingFrequency.length; ++i) {
             array[i] = (int) alternatingFrequency[i];
         }
-        Map<Integer, Integer> hm = new HashMap<>(); ///??
-        int highestVote = array.length;
 
+        int highestVote = array.length;
         for (int var4 = 0; var4 < highestVote; ++var4) {
             int x = array[var4];
             if (!hm.containsKey(x)) {
@@ -202,8 +194,7 @@ public class SoundProcessingSecond extends Application {
 
         System.out.println("Basic frequencies: ");
         System.out.println(hm);
-        Integer highestMap = null;
-        highestVote = 0;
+        Integer highestMap = 0;
 
         for (Entry<Integer, Integer> integerIntegerEntry : hm.entrySet()) {
             if (integerIntegerEntry.getValue() > highestVote) {
@@ -389,17 +380,9 @@ public class SoundProcessingSecond extends Application {
         grid.setPadding(new Insets(10.0D, 10.0D, 10.0D, 10.0D));
         grid.setVgap(8.0D);
         grid.setHgap(10.0D);
-        Label windowLenLabel = new Label("Window length: ");
-        GridPane.setConstraints(windowLenLabel, 3, 1);
-        TextField windowLenTF = new TextField("33");
-        GridPane.setConstraints(windowLenTF, 3, 2);
-        Label shiftLabel = new Label("Shift: ");
-        GridPane.setConstraints(shiftLabel, 3, 3);
-        TextField widowShiftHopSizeInput = new TextField("4");
-        GridPane.setConstraints(widowShiftHopSizeInput, 3, 4);
 
         Button fileBtn = new Button("Choose a file");
-        GridPane.setConstraints(fileBtn, 0, 1);
+        setConstraints(fileBtn, 0, 1);
         fileBtn.setOnAction((e) -> {
             SoundFile();
             if (file != null) {
@@ -412,10 +395,10 @@ public class SoundProcessingSecond extends Application {
         });
 
         TextField periodInput = new TextField("3");
-        GridPane.setConstraints(periodInput, 2, 2);
+        setConstraints(periodInput, 2, 2);
 
         Button graphButton = new Button("Signal in the time domain");
-        GridPane.setConstraints(graphButton, 0, 2);
+        setConstraints(graphButton, 0, 2);
         graphButton.setOnAction((e) -> {
             double period = Double.parseDouble(periodInput.getText()) / frequency();
             Stage stage = new Stage();
@@ -425,7 +408,7 @@ public class SoundProcessingSecond extends Application {
         });
 
         Button harmoniousBan = new Button("Harmonious");
-        GridPane.setConstraints(harmoniousBan, 0, 3);
+        setConstraints(harmoniousBan, 0, 3);
         harmoniousBan.setOnAction((e) -> {
             double[] wnd = rectangularFunc(1);
             double[][] amplitudeAndFrequencies = stft(1, wnd);
@@ -435,78 +418,88 @@ public class SoundProcessingSecond extends Application {
             stage.show();
         });
 
+        Label shiftLabel = new Label("Shift: ");
+        setConstraints(shiftLabel, 3, 3);
+        TextField widowShiftHopSizeInput = new TextField("4");
+        setConstraints(widowShiftHopSizeInput, 3, 4);
+
+        Label windowLenLabel = new Label("Window length: ");
+        setConstraints(windowLenLabel, 3, 1);
+        TextField windowLenTF = new TextField("33");
+        setConstraints(windowLenTF, 3, 2);
+
         Button rectangleFuncBan = new Button("Rectangle window function");
-        GridPane.setConstraints(rectangleFuncBan, 3, 5);
+        setConstraints(rectangleFuncBan, 3, 5);
         rectangleFuncBan.setOnAction((e) -> {
             frequency();
             double[] wnd = rectangularFunc(Integer.parseInt(windowLenTF.getText()));
             stft(Integer.parseInt(widowShiftHopSizeInput.getText()), wnd);
         });
+
         Button vonHannBtn = new Button("Von Hann window function");
-        GridPane.setConstraints(vonHannBtn, 3, 6);
+        setConstraints(vonHannBtn, 3, 6);
         vonHannBtn.setOnAction((e) -> {
             double[] wnd = hannFunc(Integer.parseInt(windowLenTF.getText()));
             stft(Integer.parseInt(widowShiftHopSizeInput.getText()), wnd);
         });
+
         Button hammingBtn = new Button("Hamming window function");
-        GridPane.setConstraints(hammingBtn, 3, 7);
+        setConstraints(hammingBtn, 3, 7);
         hammingBtn.setOnAction((e) -> {
             double[] wnd = hammingFunc(Integer.parseInt(windowLenTF.getText()));
             stft(Integer.parseInt(widowShiftHopSizeInput.getText()), wnd);
         });
+
         Label cutOffFrequencyLbl = new Label("Cut off frequency: ");
-        GridPane.setConstraints(cutOffFrequencyLbl, 4, 1);
+        setConstraints(cutOffFrequencyLbl, 4, 1);
         TextField cutOffTF = new TextField("800");
 
-        GridPane.setConstraints(cutOffTF, 4, 2);
+        setConstraints(cutOffTF, 4, 2);
         Button lowPassFilterBtn = new Button("Low pass filter");
-        GridPane.setConstraints(lowPassFilterBtn, 4, 3);
+        setConstraints(lowPassFilterBtn, 4, 3);
         lowPassFilterBtn.setOnAction((e) -> {
             double[] wnd = lowPassFilter(Integer.parseInt(cutOffTF.getText()));
             stft(Integer.parseInt(widowShiftHopSizeInput.getText()), wnd);
         });
 
         Button inverseFourierBtn = new Button("Inverse Fourier");
-        GridPane.setConstraints(inverseFourierBtn, 4, 4);
-
+        setConstraints(inverseFourierBtn, 4, 4);
         inverseFourierBtn.setOnAction((e) -> {
             double[] wnd = rectangularFunc(1);
             iSTFT(wnd);
         });
+
         Button inverseDFTSoundButton = new Button("Play sound");
-        GridPane.setConstraints(inverseDFTSoundButton, 4, 5);
+        setConstraints(inverseDFTSoundButton, 4, 5);
         inverseDFTSoundButton.setOnAction((e) -> {
             double durationInSeconds = soundTime();
             playSound(durationInSeconds, soundArr);
-
-
         });
 
 
         Button removeNoiseBtn = new Button("Remove noise");
-        GridPane.setConstraints(removeNoiseBtn, 2, 1);
+        setConstraints(removeNoiseBtn, 2, 1);
         removeNoiseBtn.setOnAction((e) -> RemoveNoise());
 
         Button wholePathBtn = new Button("Play sound");
-        GridPane.setConstraints(wholePathBtn, 0, 5);
+        setConstraints(wholePathBtn, 0, 5);
         wholePathBtn.setOnAction((e) -> sound(file));
+
         Button wholeFrequenciesBtn = new Button("Display frequencies");
-        GridPane.setConstraints(wholeFrequenciesBtn, 0, 6);
+        setConstraints(wholeFrequenciesBtn, 0, 6);
         wholeFrequenciesBtn.setOnAction((e) -> {
             wholeFrequencies();
             groupFrequencies();
         });
 
-
         Button Play = new Button("Play main frequency");
-        GridPane.setConstraints(Play, 0, 4);
+        setConstraints(Play, 0, 4);
         Play.setOnAction((e) -> {
             double durationInSeconds = soundTime();
             double[] alternatingFrequency = wholeFrequencies();
             playSound(durationInSeconds, alternatingFrequency);
-
-
         });
+
         grid.getChildren().addAll(inverseDFTSoundButton, inverseFourierBtn, cutOffFrequencyLbl, cutOffTF, lowPassFilterBtn, windowLenLabel, shiftLabel,
                 widowShiftHopSizeInput, vonHannBtn, hammingBtn, rectangleFuncBan, windowLenTF, graphButton, periodInput, fileBtn, harmoniousBan, removeNoiseBtn,
                 wholePathBtn, Play, wholeFrequenciesBtn);
