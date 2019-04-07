@@ -12,15 +12,7 @@ import java.util.Arrays;
 
 public class ImageProcessing extends Application {
     private static Image image;
-    private static int[][] ColorsBeforeFiltration;
-
-    private int[][] getMask(int width, int height) {
-        int[][] mask = new int[width][height];
-        for (int i = 0; i < height; i++) {
-            Arrays.fill(mask[i], 1);
-        }
-        return mask;
-    }
+    private static int[][] arrRGB;
 
     public static void main(String[] args) {
         launch(args);
@@ -33,6 +25,133 @@ public class ImageProcessing extends Application {
         return image;
     }
 
+    private int[][] getFiltrationMask(int width, int height) {
+        int[][] mask = new int[width][height];
+        for (int i = 0; i < height; i++) {
+            Arrays.fill(mask[i], 1);
+        }
+        return mask;
+    }
+
+    private int getImageHeight() {
+        return (int) image.getHeight();
+    }
+
+    private int getImageWidth() {
+        return (int) image.getWidth();
+    }
+
+    private int getImagePixelsAmount() { return getImageHeight() * getImageWidth(); }
+
+    private void setRedGreenBlue(int pixelNumber, int coordinateX, int coordinateY) {
+        int color = image.getPixelReader().getArgb(coordinateX, coordinateY);
+        arrRGB = new int[getImagePixelsAmount()][3];
+        arrRGB[pixelNumber][0] = (color >> 16) & 0xff;
+        arrRGB[pixelNumber][1] = (color >> 8) & 0xff;
+        arrRGB[pixelNumber][2] = color & 0xff;
+    }
+
+    private void pixelToColors() {
+
+        int pixelNumber = 0;
+        for (int coordinateY = 0; coordinateY < getImageHeight(); coordinateY++) {
+            for (int coordinateX = 0; coordinateX < getImageWidth(); coordinateX++) {
+                setRedGreenBlue(pixelNumber, coordinateX, coordinateY);
+                pixelNumber++;
+            }
+        }
+    }
+
+    private int changeColorValueIfOutOfBound(int color) {
+        if (color > 255) color = 255;
+        else if (color < 0) color = 0;
+        return color;
+    }
+
+    private Image imageChangedColorsToARGB(WritableImage wr, PixelWriter pw) {
+        int Red = 0, Green = 0, Blue = 0;
+        for (int i = 0; i < getImagePixelsAmount(); i++) {
+            for (int j = 0; j < arrRGB[i].length; j++) {
+                int color = changeColorValueIfOutOfBound(arrRGB[i][j]);
+                if (j == 0) Red = color;
+                else if (j == 1) Green = color;
+                else Blue = color;
+            }
+            pw.setArgb(i % getImageWidth(), i / getImageHeight(), (0xFF << 24) | Red << 16 | Green << 8 | Blue);
+        }
+        return wr;
+    }
+
+    private int sumArrayValues(int[][] filter) {
+        int sum = 0;
+        for (int[] ints : filter) {
+            for (int anInt : ints) {
+                sum += anInt;
+            }
+        }
+        return sum;
+    }
+
+    private int getPixelColorValue(int maskSize, int[][] filter, int maskCoordX, int maskCoordY, int imgCoordX, int imgCoordY){
+        int filterCoordValue = filter[maskSize + maskCoordY][maskSize + maskCoordX];
+        int pixelColorValue = ((image.getPixelReader().getArgb(imgCoordX + maskCoordX, imgCoordY + maskCoordY)));
+        return filterCoordValue * pixelColorValue;
+    }
+
+    private int[] filterColorsWithMask(int[] pixelRGB,int maskSize,int[][] filter,int imgCoordX,int imgCoordY) {
+        for (int maskCoordY = -maskSize; maskCoordY <= maskSize; maskCoordY++) {
+            for (int maskCoordX = -maskSize; maskCoordX <= maskSize; maskCoordX++) {
+                pixelRGB[0] += (getPixelColorValue(maskSize, filter, maskCoordX, maskCoordY, imgCoordX, imgCoordY) >> 16) & 0xff;
+                pixelRGB[1] += (getPixelColorValue(maskSize, filter, maskCoordX, maskCoordY, imgCoordX, imgCoordY) >> 8) & 0xff;
+                pixelRGB[2] += getPixelColorValue(maskSize, filter, maskCoordX, maskCoordY, imgCoordX, imgCoordY) & 0xff;
+            }
+        }
+        return pixelRGB;
+    }
+
+    private void maskFiltration(int maskSize, int[][] filter) {
+        int height = getImageHeight();
+        int width = getImageWidth();
+        for (int i = 0; i < getImagePixelsAmount(); i++) {
+            int imgCoordX = i % width;
+            int imgCoordY = i / width;
+            if (imgCoordX >= maskSize && imgCoordY >= maskSize) {
+                if (imgCoordX < width - maskSize && imgCoordY < height - maskSize) {
+                    int[] pixelRGB = filterColorsWithMask(arrRGB[i], maskSize, filter, imgCoordX, imgCoordY);
+                    arrRGB[i][0] = (pixelRGB[0] / sumArrayValues(filter));
+                    arrRGB[i][1] = (pixelRGB[1] / sumArrayValues(filter));
+                    arrRGB[i][2] = (pixelRGB[2] / sumArrayValues(filter));
+                }
+            }
+        }
+    }
+
+    private void brightness(int brightness) {
+        for (int i = 0; i < getImagePixelsAmount(); i++) {
+            arrRGB[i][0] =+ brightness;
+            arrRGB[i][1] =+ brightness;
+            arrRGB[i][2] =+ brightness;
+        }
+    }
+
+    private void contrast(int contrast) {
+        for (int i = 0; i < getImagePixelsAmount(); i++) {
+            for (int j = 0; arrRGB[i].length >= 2; j++) {
+                if (arrRGB[i][j] > 125) {
+                    arrRGB[i][j] *= contrast / 10;
+                }
+            }
+        }
+    }
+
+    private void negativePositive(int negative, int negativeCoefficient) {
+        for (int i = 0; i < getImagePixelsAmount(); i++) {
+            arrRGB[i][0] *= (negative - negativeCoefficient);
+            arrRGB[i][1] *= (negative - negativeCoefficient);
+            arrRGB[i][2] *= (negative - negativeCoefficient);
+        }
+    }
+
     private ImageView imageView(Image image) {
         ImageView imageView = new ImageView();
         imageView.setImage(image);
@@ -43,168 +162,12 @@ public class ImageProcessing extends Application {
         return imageView;
     }
 
-    private void pixelReader() {
-        PixelReader pixelReader = image.getPixelReader();
-        int total_pixels = (int) (image.getHeight() * image.getWidth());
-        System.out.println();
-        System.out.println("Image Height: " + image.getHeight() + " Image Width: "
-                + image.getWidth() + " Pixel Format: " + pixelReader.getPixelFormat());
-        int i = 0;
-        ColorsBeforeFiltration = new int[total_pixels][3];
-        for (int readY = 0; readY < image.getHeight(); readY++) {
-            for (int readX = 0; readX < image.getWidth(); readX++) {
-                int color = image.getPixelReader().getArgb(readX, readY);
-                int  red = (color >> 16) & 0xff;
-                int green = (color >> 8) & 0xff;
-                int blue = color & 0xff;
-                ColorsBeforeFiltration[i][0]= red;
-                ColorsBeforeFiltration[i][1]= green;
-                ColorsBeforeFiltration[i][2]= blue;
-                i++;
-            }
-        }
-    }
-
-
-    private Image getImageFromData() {
-        WritableImage wr = new WritableImage((int)image.getWidth(), (int)image.getHeight());
+    private void showChangedImg(GridPane grid) {
+        WritableImage wr = new WritableImage(getImageWidth(), getImageHeight());
         PixelWriter pw = wr.getPixelWriter();
-        int total_pixels = (int) (image.getHeight() * image.getWidth());
-        for (int i = 0; i < total_pixels; i++) {
-            int Red = ColorsBeforeFiltration[i][0];
-            int Green = ColorsBeforeFiltration[i][1];
-            int Blue = ColorsBeforeFiltration[i][2];
-
-            for (int j = 0; j < ColorsBeforeFiltration[i].length; j++) {
-                int color;
-//                switch (j) {
-//                    case (j = 0) {
-//                        color =
-//                    }
-//                }
-                if (ColorsBeforeFiltration[i][j] > 255 ) {
-                    ColorsBeforeFiltration[i][j] = 255;
-                } else if (ColorsBeforeFiltration[i][j] < 0) {
-                    ColorsBeforeFiltration[i][j] = 0;
-                }
-            }
-
-
-
-            pw.setArgb(i % (int)image.getWidth(), i/(int)image.getHeight(), (0xFF << 24) | Red << 16 | Green << 8 | Blue);
-        }
-
-        return wr;
-    }
-
-
-    private void maskFiltration(int maskSize, int[][] filter){
-        int height = (int) image.getHeight();
-        int width = (int) image.getWidth();
-        int total_pixels = (int) (image.getHeight() * image.getWidth());
-            for (int i = 0; i < total_pixels; i++) {
-
-                int x = i % width;
-                int y = i / width;
-
-                int red = ColorsBeforeFiltration[i][0];
-                int green = ColorsBeforeFiltration[i][1];
-                int blue = ColorsBeforeFiltration[i][2];
-
-                if (x >= maskSize && y >= maskSize) {
-                    if (x < width - maskSize && y < height - maskSize) {
-                        for (int j = -maskSize; j <= maskSize; j++) {
-                            for (int k = -maskSize; k <= maskSize; k++) {
-                                red += (filter[maskSize + j][maskSize + k] * ((image.getPixelReader().getArgb(x+ k, y + j)))>> 16) & 0xff;
-                                green += (filter[maskSize + j][maskSize + k] * ((image.getPixelReader().getArgb(x + k, y + j))>> 8) & 0xff);
-                                blue += filter[maskSize + j][maskSize + k] * ((image.getPixelReader().getArgb(x + k, y + j)) & 0xff);
-                            }
-                        }
-                        red = (red / sum(filter));
-                        green = (green / sum(filter));
-                        blue = (blue / sum(filter));
-                    }
-                }
-                    ColorsBeforeFiltration[i][0] = red;
-                    ColorsBeforeFiltration[i][1] = green;
-                    ColorsBeforeFiltration[i][2] = blue;
-        }
-    }
-
-    private void Brightness(int brightness) {
-        int total_pixels = (int) (image.getHeight() * image.getWidth());
-        for (int i = 0; i < total_pixels; i++) {
-            int red = ColorsBeforeFiltration[i][0] + brightness;
-            int green = ColorsBeforeFiltration[i][1] + brightness;
-            int blue = ColorsBeforeFiltration[i][2] + brightness;
-
-
-            ColorsBeforeFiltration[i][0]= red;
-            ColorsBeforeFiltration[i][1]= green;
-            ColorsBeforeFiltration[i][2]= blue;
-        }
-    }
-
-    private void Contrast(int contrast) {
-        int total_pixels = (int) (image.getHeight() * image.getWidth());
-        for (int i = 0; i < total_pixels; i++) {
-
-            int red = ColorsBeforeFiltration[i][0];
-            int green = ColorsBeforeFiltration[i][1];
-            int blue = ColorsBeforeFiltration[i][2];
-
-            if (ColorsBeforeFiltration[i][0] > 125) {
-                red = red * contrast / 10;
-            }
-            if (ColorsBeforeFiltration[i][1] > 125) {
-                green = green * contrast / 10;
-            }
-            if (ColorsBeforeFiltration[i][2] > 125) {
-                blue = blue * contrast / 10;
-            }
-            ColorsBeforeFiltration[i][0]= red;
-            ColorsBeforeFiltration[i][1]= green;
-            ColorsBeforeFiltration[i][2]= blue;
-        }
-
-    }
-
-    private void NegativePositive(int negative, int negativeCoefficient) {
-        int total_pixels = (int) (image.getHeight() * image.getWidth());
-        for (int i = 0; i < total_pixels; i++) {
-            int red = ColorsBeforeFiltration[i][0];
-            int green = ColorsBeforeFiltration[i][1];
-            int blue = ColorsBeforeFiltration[i][2];
-
-            red = negative - negativeCoefficient * red;
-            green = negative - negativeCoefficient * green;
-            blue = negative - negativeCoefficient * blue;
-
-            ColorsBeforeFiltration[i][0]= red;
-            ColorsBeforeFiltration[i][1]= green;
-            ColorsBeforeFiltration[i][2]= blue;
-        }
-    }
-
-    private int sum(int[][] filter) {
-        int sum = 0;
-        for (int[] ints : filter) {
-            for (int anInt : ints) {
-                sum += anInt;
-            }
-        }
-        return sum;
-    }
-
-    private void AddImg(GridPane grid) {
-        ImageView imageView2 = new ImageView();
-        imageView2.setImage(getImageFromData());
-        imageView2.setFitWidth(400);
-        imageView2.setPreserveRatio(true);
-        imageView2.setSmooth(true);
-        imageView2.setCache(true);
-        GridPane.setConstraints(imageView2, 1, 0);
-        grid.getChildren().add(imageView2);
+        ImageView imageView = imageView(imageChangedColorsToARGB(wr, pw));
+        GridPane.setConstraints(imageView, 1, 0);
+        grid.getChildren().add(imageView);
     }
 
     @Override
@@ -212,76 +175,72 @@ public class ImageProcessing extends Application {
         GridPane grid = new GridPane();
 
 
-        primaryStage.setTitle("Edycja Obrazu");
+        primaryStage.setTitle("Image processing");
 
         grid.setPadding(new Insets(10, 10, 10, 10));
         grid.setVgap(8);
         grid.setHgap(10);
 
-//        final FileChooser fileChooser = new FileChooser();
         Button fileButton = new Button("New file");
         GridPane.setConstraints(fileButton, 0, 1);
-        fileButton.setOnAction(e->{
-            Image image = image();
-            ImageView imageView = imageView(image);
+        fileButton.setOnAction(e -> {
+            ImageView imageView = imageView(image());
             GridPane.setConstraints(imageView, 0, 0);
             grid.getChildren().add(imageView);
-            pixelReader();
+            pixelToColors();
         });
 
 
         TextField brighter = new TextField("0");
         GridPane.setConstraints(brighter, 0, 3);
 
-        Button brighterButton = new Button("Jasniej/Ciemniej");
+        Button brighterButton = new Button("Brighter/Darker");
         GridPane.setConstraints(brighterButton, 0, 2);
-        brighterButton.setOnAction(e-> {
+        brighterButton.setOnAction(e -> {
             int brightness = Integer.parseInt(brighter.getText());
-            Brightness(brightness);
-            AddImg(grid);
+            brightness(brightness);
+            showChangedImg(grid);
         });
 
         TextField darker = new TextField("10");
         GridPane.setConstraints(darker, 1, 3);
 
-        Button contrastButton = new Button("Contrast");
+        Button contrastButton = new Button("contrast");
         GridPane.setConstraints(contrastButton, 1, 2);
-        contrastButton.setOnAction(e-> {
+        contrastButton.setOnAction(e -> {
             int contrast = Integer.parseInt(darker.getText());
-            Contrast(contrast);
-            AddImg(grid);
+            contrast(contrast);
+            showChangedImg(grid);
         });
 
         //blue = negative - negativeCoefficient*blue;
         Button negativeButton = new Button("Negative");
         GridPane.setConstraints(negativeButton, 0, 4);
-        negativeButton.setOnAction(e-> {
+        negativeButton.setOnAction(e -> {
             int negative = 255;
             int negativeCoefficient = 1;
-            NegativePositive(negative, negativeCoefficient);
-            AddImg(grid);
+            negativePositive(negative, negativeCoefficient);
+            showChangedImg(grid);
         });
 
-        Button filterAvg3x3 = new Button("Filtr Srednia 3x3");
+        Button filterAvg3x3 = new Button("Filter average 3x3");
         GridPane.setConstraints(filterAvg3x3, 1, 4);
-        filterAvg3x3.setOnAction(e-> {
-            int[][] filter = getMask(3,3);
+        filterAvg3x3.setOnAction(e -> {
+            int[][] filter = getFiltrationMask(3, 3);
             int maskSize = 1;
             maskFiltration(maskSize, filter);
-            AddImg(grid);
+            showChangedImg(grid);
         });
 
-        Button filterAvg5x5 = new Button("Filtr Srednia 9x9");
+        Button filterAvg5x5 = new Button("Filter average 9x9");
         GridPane.setConstraints(filterAvg5x5, 2, 4);
-        filterAvg5x5.setOnAction(e-> {
+        filterAvg5x5.setOnAction(e -> {
 
-            int[][] filter = getMask(5,5);
+            int[][] filter = getFiltrationMask(5, 5);
             int maskSize = 2;
             maskFiltration(maskSize, filter);
-            AddImg(grid);
+            showChangedImg(grid);
         });
-
-
 
 
         TextField Input1 = new TextField("1");
@@ -310,24 +269,24 @@ public class ImageProcessing extends Application {
 
         TextField Input9 = new TextField("1");
         GridPane.setConstraints(Input9, 2, 8);
-        Button filterButton = new Button("Filtruj Obraz");
+        Button filterButton = new Button("Filter");
         GridPane.setConstraints(filterButton, 0, 5);
 
 
-        filterButton.setOnAction(e-> {
+        filterButton.setOnAction(e -> {
 
-            int[][] filter = new int[][] {
+            int[][] filter = new int[][]{
                     {Integer.parseInt(Input1.getText()), Integer.parseInt(Input2.getText()), Integer.parseInt(Input3.getText())},
                     {Integer.parseInt(Input4.getText()), Integer.parseInt(Input5.getText()), Integer.parseInt(Input6.getText())},
                     {Integer.parseInt(Input7.getText()), Integer.parseInt(Input8.getText()), Integer.parseInt(Input9.getText())}
             };
             int maskSize = 1;
             maskFiltration(maskSize, filter);
-                AddImg(grid);
+            showChangedImg(grid);
         });
 
-        grid.getChildren().addAll(fileButton,brighterButton,brighter,contrastButton, darker,negativeButton,filterAvg3x3,
-                filterAvg5x5,filterButton,Input1,Input2,Input3,Input4,Input5,Input6,Input7,Input8,Input9);
+        grid.getChildren().addAll(fileButton, brighterButton, brighter, contrastButton, darker, negativeButton, filterAvg3x3,
+                filterAvg5x5, filterButton, Input1, Input2, Input3, Input4, Input5, Input6, Input7, Input8, Input9);
         Scene scene = new Scene(grid, 850, 600);
         primaryStage.setScene(scene);
         primaryStage.show();
