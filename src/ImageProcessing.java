@@ -53,7 +53,6 @@ public class ImageProcessing extends Application {
     }
 
     private void pixelToColors() {
-
         int pixelNumber = 0;
         for (int coordinateY = 0; coordinateY < getImageHeight(); coordinateY++) {
             for (int coordinateX = 0; coordinateX < getImageWidth(); coordinateX++) {
@@ -119,20 +118,14 @@ public class ImageProcessing extends Application {
             if (imgCoordX >= maskSize && imgCoordY >= maskSize) {
                 if (imgCoordX < width - maskSize && imgCoordY < height - maskSize) {
                     int[] pixelRGB = filterColorsWithMask(arrRGB[i], maskSize, filter, imgCoordX, imgCoordY);
-                    arrRGB[i][0] = (pixelRGB[0] / sumArrayValues(filter));
-                    arrRGB[i][1] = (pixelRGB[1] / sumArrayValues(filter));
-                    arrRGB[i][2] = (pixelRGB[2] / sumArrayValues(filter));
+                    arrRGB[i] = doArithmetic(pixelRGB, sumArrayValues(filter), '/');
                 }
             }
         }
     }
 
     private void brightness(int brightness) {
-        for (int i = 0; i < getImagePixelsAmount(); i++) {
-            arrRGB[i][0] =+ brightness;
-            arrRGB[i][1] =+ brightness;
-            arrRGB[i][2] =+ brightness;
-        }
+        changeColorsValues(brightness, '+');
     }
 
     private void contrast(int contrast) {
@@ -145,14 +138,22 @@ public class ImageProcessing extends Application {
         }
     }
 
-    private void negativePositive() {
-        int negative = 255;
-        int negativeCoefficient = 1;
-        for (int i = 0; i < getImagePixelsAmount(); i++) {
-            arrRGB[i][0] *= (negative - negativeCoefficient);
-            arrRGB[i][1] *= (negative - negativeCoefficient);
-            arrRGB[i][2] *= (negative - negativeCoefficient);
+    private int[] doArithmetic(int[] value1, int value2, char operation) {
+        int[] arr = new int[value1.length];
+        for (int j = 0; j < arrRGB.length; j++) {
+            arr[j] = Operations.arthmeticOperation(value1[j], value2, operation);
         }
+        return arr;
+    }
+
+    private void changeColorsValues(int value, char operation) {
+        for (int i = 0; i < getImagePixelsAmount(); i++) {
+            arrRGB[i] = doArithmetic(arrRGB[i], value, operation);
+            }
+        }
+
+    private void negativePositive(int negative, int negativeCoefficient) {
+        changeColorsValues(negative - negativeCoefficient, '*');
     }
 
     private ImageView imageView(Image image) {
@@ -179,6 +180,12 @@ public class ImageProcessing extends Application {
         return button;
     }
 
+    private TextField setTextField(String text, int columnIndex, int rowIndex) {
+        TextField textField = new TextField(text);
+        GridPane.setConstraints(textField, columnIndex, rowIndex);
+        return textField;
+    }
+
     @Override
     public void start(Stage primaryStage) {
         GridPane grid = new GridPane();
@@ -197,8 +204,7 @@ public class ImageProcessing extends Application {
         });
 
 
-        TextField brighter = new TextField("0");
-        GridPane.setConstraints(brighter, 0, 3);
+        TextField brighter = setTextField("0", 0, 2);
 
         Button brighterButton = setButton("Brighter/Darker", 0,2);
         brighterButton.setOnAction(e -> {
@@ -207,8 +213,8 @@ public class ImageProcessing extends Application {
             showChangedImg(grid);
         });
 
-        TextField darker = new TextField("10");
-        GridPane.setConstraints(darker, 1, 3);
+
+        TextField darker = setTextField("10", 1, 3);
 
 
         Button contrastButton = setButton("Contrast", 1,2);
@@ -220,7 +226,9 @@ public class ImageProcessing extends Application {
 
         Button negativeButton = setButton("Negative", 0,4);
         negativeButton.setOnAction(e -> {
-            negativePositive();
+            int negative = 255;
+            int negativeCoefficient = 1;
+            negativePositive(negative, negativeCoefficient);
             showChangedImg(grid);
         });
 
@@ -243,8 +251,7 @@ public class ImageProcessing extends Application {
         ArrayList<TextField> input = new ArrayList<>();
         int rowIndex = 6;
         for (int i = 0; i < 9; i++) {
-            input.add(new TextField("2"));
-            GridPane.setConstraints(input.get(i), i % 3, rowIndex);
+            input.add(setTextField("2", i % 3, rowIndex));
             if (i % 3 == 2) {
                 rowIndex += 1;
             }
