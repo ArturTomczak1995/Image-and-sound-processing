@@ -1,3 +1,5 @@
+package processing.sound;
+
 import java.io.*;
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -17,6 +19,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import processing.CommonMethods;
+
 import javax.sound.sampled.*;
 import static javafx.scene.layout.GridPane.*;
 
@@ -234,7 +238,7 @@ public class SoundProcessingSecond extends Application {
         for (int i = 0; (double) i < (double) frequency.length * (f / (double) (2 * frequency.length)) - 1.0D; ++i) {
             series.getData().add(new Data<>(Double.toString((double) ((int) frequency[i + 1])), trackAmplitude[i]));
         }
-        return getChart(series, "Fourier transform of sound signal in time domain", "Frequency", "Amplitude");
+        return getChart(series, "Fourier transform of processing.sound signal in time domain", "Frequency", "Amplitude");
     }
 
     private double[] rectangularFunc(int windowMaskSize) {
@@ -381,7 +385,7 @@ public class SoundProcessingSecond extends Application {
         grid.setVgap(8.0D);
         grid.setHgap(10.0D);
 
-        Button fileBtn = new Button("Choose a file");
+        Button fileBtn = new Button("New file");
         setConstraints(fileBtn, 0, 1);
         fileBtn.setOnAction((e) -> {
             SoundFile();
@@ -469,7 +473,7 @@ public class SoundProcessingSecond extends Application {
             iSTFT(wnd);
         });
 
-        Button inverseDFTSoundButton = new Button("Play sound");
+        Button inverseDFTSoundButton = new Button("Play processing.sound");
         setConstraints(inverseDFTSoundButton, 4, 5);
         inverseDFTSoundButton.setOnAction((e) -> {
             double durationInSeconds = soundTime();
@@ -481,7 +485,7 @@ public class SoundProcessingSecond extends Application {
         setConstraints(removeNoiseBtn, 2, 1);
         removeNoiseBtn.setOnAction((e) -> RemoveNoise());
 
-        Button wholePathBtn = new Button("Play sound");
+        Button wholePathBtn = new Button("Play processing.sound");
         setConstraints(wholePathBtn, 0, 5);
         wholePathBtn.setOnAction((e) -> sound(file));
 
