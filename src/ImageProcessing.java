@@ -8,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.stage.Stage;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class ImageProcessing extends Application {
@@ -18,7 +19,7 @@ public class ImageProcessing extends Application {
         launch(args);
     }
 
-    private static Image image() {
+    private static Image getImage() {
         File file = new CommonMethods().file("All Images", "*.*");
         image = new Image(file.toURI().toString());
         System.out.println(file);
@@ -144,7 +145,9 @@ public class ImageProcessing extends Application {
         }
     }
 
-    private void negativePositive(int negative, int negativeCoefficient) {
+    private void negativePositive() {
+        int negative = 255;
+        int negativeCoefficient = 1;
         for (int i = 0; i < getImagePixelsAmount(); i++) {
             arrRGB[i][0] *= (negative - negativeCoefficient);
             arrRGB[i][1] *= (negative - negativeCoefficient);
@@ -170,21 +173,24 @@ public class ImageProcessing extends Application {
         grid.getChildren().add(imageView);
     }
 
+    private Button setButton(String text, int columnIndex, int rowIndex) {
+        Button button = new Button(text);
+        GridPane.setConstraints(button, columnIndex, rowIndex);
+        return button;
+    }
+
     @Override
     public void start(Stage primaryStage) {
         GridPane grid = new GridPane();
-
-
         primaryStage.setTitle("Image processing");
 
         grid.setPadding(new Insets(10, 10, 10, 10));
         grid.setVgap(8);
         grid.setHgap(10);
 
-        Button fileButton = new Button("New file");
-        GridPane.setConstraints(fileButton, 0, 1);
-        fileButton.setOnAction(e -> {
-            ImageView imageView = imageView(image());
+        Button fileButton = setButton("New file", 8,8);
+        fileButton.setOnAction( e -> {
+            ImageView imageView = imageView(getImage());
             GridPane.setConstraints(imageView, 0, 0);
             grid.getChildren().add(imageView);
             pixelToColors();
@@ -194,8 +200,7 @@ public class ImageProcessing extends Application {
         TextField brighter = new TextField("0");
         GridPane.setConstraints(brighter, 0, 3);
 
-        Button brighterButton = new Button("Brighter/Darker");
-        GridPane.setConstraints(brighterButton, 0, 2);
+        Button brighterButton = setButton("Brighter/Darker", 0,2);
         brighterButton.setOnAction(e -> {
             int brightness = Integer.parseInt(brighter.getText());
             brightness(brightness);
@@ -205,26 +210,21 @@ public class ImageProcessing extends Application {
         TextField darker = new TextField("10");
         GridPane.setConstraints(darker, 1, 3);
 
-        Button contrastButton = new Button("contrast");
-        GridPane.setConstraints(contrastButton, 1, 2);
+
+        Button contrastButton = setButton("Contrast", 1,2);
         contrastButton.setOnAction(e -> {
             int contrast = Integer.parseInt(darker.getText());
             contrast(contrast);
             showChangedImg(grid);
         });
 
-        //blue = negative - negativeCoefficient*blue;
-        Button negativeButton = new Button("Negative");
-        GridPane.setConstraints(negativeButton, 0, 4);
+        Button negativeButton = setButton("Negative", 0,4);
         negativeButton.setOnAction(e -> {
-            int negative = 255;
-            int negativeCoefficient = 1;
-            negativePositive(negative, negativeCoefficient);
+            negativePositive();
             showChangedImg(grid);
         });
 
-        Button filterAvg3x3 = new Button("Filter average 3x3");
-        GridPane.setConstraints(filterAvg3x3, 1, 4);
+        Button filterAvg3x3 = setButton("Filter average 3x3", 1,4);
         filterAvg3x3.setOnAction(e -> {
             int[][] filter = getFiltrationMask(3, 3);
             int maskSize = 1;
@@ -232,61 +232,41 @@ public class ImageProcessing extends Application {
             showChangedImg(grid);
         });
 
-        Button filterAvg5x5 = new Button("Filter average 9x9");
-        GridPane.setConstraints(filterAvg5x5, 2, 4);
+        Button filterAvg5x5 = setButton("Filter average 9x9", 2,4);
         filterAvg5x5.setOnAction(e -> {
-
             int[][] filter = getFiltrationMask(5, 5);
             int maskSize = 2;
             maskFiltration(maskSize, filter);
             showChangedImg(grid);
         });
 
+        ArrayList<TextField> input = new ArrayList<>();
+        int rowIndex = 6;
+        for (int i = 0; i < 9; i++) {
+            input.add(new TextField("2"));
+            GridPane.setConstraints(input.get(i), i % 3, rowIndex);
+            if (i % 3 == 2) {
+                rowIndex += 1;
+            }
 
-        TextField Input1 = new TextField("1");
-        GridPane.setConstraints(Input1, 0, 6);
+        }
 
-        TextField Input2 = new TextField("1");
-        GridPane.setConstraints(Input2, 1, 6);
-
-        TextField Input3 = new TextField("1");
-        GridPane.setConstraints(Input3, 2, 6);
-
-        TextField Input4 = new TextField("1");
-        GridPane.setConstraints(Input4, 0, 7);
-
-        TextField Input5 = new TextField("-5");
-        GridPane.setConstraints(Input5, 1, 7);
-
-        TextField Input6 = new TextField("1");
-        GridPane.setConstraints(Input6, 2, 7);
-
-        TextField Input7 = new TextField("1");
-        GridPane.setConstraints(Input7, 0, 8);
-
-        TextField Input8 = new TextField("1");
-        GridPane.setConstraints(Input8, 1, 8);
-
-        TextField Input9 = new TextField("1");
-        GridPane.setConstraints(Input9, 2, 8);
-        Button filterButton = new Button("Filter");
-        GridPane.setConstraints(filterButton, 0, 5);
-
-
+        Button filterButton = setButton("Filter", 0,5);
         filterButton.setOnAction(e -> {
-
-            int[][] filter = new int[][]{
-                    {Integer.parseInt(Input1.getText()), Integer.parseInt(Input2.getText()), Integer.parseInt(Input3.getText())},
-                    {Integer.parseInt(Input4.getText()), Integer.parseInt(Input5.getText()), Integer.parseInt(Input6.getText())},
-                    {Integer.parseInt(Input7.getText()), Integer.parseInt(Input8.getText()), Integer.parseInt(Input9.getText())}
-            };
+            int[][] filter = new int[3][3];
+            int rowIdx = 0;
+            for (int i = 0; i < input.size(); i++) {
+                filter[rowIdx][i % 3] = (Integer.parseInt(input.get(i).getText()));
+                if (i % 3 == 0) { rowIdx += 1; }
+            }
             int maskSize = 1;
             maskFiltration(maskSize, filter);
             showChangedImg(grid);
         });
 
+        grid.getChildren().addAll(input);
         grid.getChildren().addAll(fileButton, brighterButton, brighter, contrastButton, darker, negativeButton, filterAvg3x3,
-                filterAvg5x5, filterButton, Input1, Input2, Input3, Input4, Input5, Input6, Input7, Input8, Input9);
+                filterAvg5x5, filterButton);
         Scene scene = new Scene(grid, 850, 600);
         primaryStage.setScene(scene);
         primaryStage.show();
