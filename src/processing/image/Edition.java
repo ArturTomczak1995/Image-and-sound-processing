@@ -27,7 +27,7 @@ class Edition {
     }
 
     void contrast(int contrast) {
-        for (int i = 0; i < Common.getImagePixelsAmount(image); i++) {
+        for (int i = 0; i < imagePixelsAmount(image); i++) {
             for (int j = 0; j < arrRGB[i].length; j++) {
                 if (arrRGB[i][j] > 125) {
                     arrRGB[i][j] *= contrast / 10.0D;
@@ -41,13 +41,13 @@ class Edition {
     }
 
     void maskFiltration(int maskSize, int[][] mask) {
-        int height = Common.getImageHeight(image);
-        int width = Common.getImageWidth(image);
-        for (int i = 0; i < Common.getImagePixelsAmount(image); i++) {
-            int imgCoordX = i % width;
-            int imgCoordY = i / width;
+        int imageHeight = imageHeight(image);
+        int imageWidth = imageWidth(image);
+        for (int i = 0; i < imagePixelsAmount(image); i++) {
+            int imgCoordX = i % imageWidth;
+            int imgCoordY = i / imageWidth;
             if (imgCoordX >= maskSize && imgCoordY >= maskSize) {
-                if (imgCoordX < width - maskSize && imgCoordY < height - maskSize) {
+                if (imgCoordX < imageWidth - maskSize && imgCoordY < imageHeight - maskSize) {
                     int[] pixelRGB = filterColorsWithMask(arrRGB[i], maskSize, mask, imgCoordX, imgCoordY);
                     arrRGB[i] = doArithmetic(pixelRGB, sumArrayValues(mask), '/');
                 }
@@ -55,11 +55,42 @@ class Edition {
         }
     }
 
+    Image getImage() {
+        int imageHeight = imageHeight(image);
+        int imageWidth = imageWidth(image);
+        WritableImage wr = new WritableImage(imageWidth, imageHeight);
+        PixelWriter pw = wr.getPixelWriter();
+        int Red = 0, Green = 0, Blue = 0;
+
+        for (int i = 0; i < imagePixelsAmount(image); i++) {
+            for (int j = 0; j < arrRGB[i].length; j++) {
+                int color = changeColorValueIfOutOfBound(arrRGB[i][j]);
+                if (j == 0) Red = color;
+                else if (j == 1) Green = color;
+                else Blue = color;
+            }
+            pw.setArgb(i % imageWidth, i / imageHeight, (0xFF << 24) | Red << 16 | Green << 8 | Blue);
+        }
+        return wr;
+    }
+
+    private static int imageHeight(Image image) {
+        return (int) image.getHeight();
+    }
+
+    private static int imageWidth(Image image) {
+        return (int) image.getWidth();
+    }
+
+    private static int imagePixelsAmount(Image image) {
+        return imageHeight(image) * imageWidth(image);
+    }
+
     private void pixelToColors() {
         int pixelNumber = 0;
-        int width = Common.getImageWidth(image);
-        arrRGB = new int[Common.getImagePixelsAmount(image)][3];
-        for (int coordinateY = 0; coordinateY < Common.getImageHeight(image); coordinateY++) {
+        int width = imageWidth(image);
+        arrRGB = new int[imagePixelsAmount(image)][3];
+        for (int coordinateY = 0; coordinateY < imageHeight(image); coordinateY++) {
             for (int coordinateX = 0; coordinateX < width; coordinateX++) {
                 pixelsToRedGreenBlue(pixelNumber, coordinateX, coordinateY);
                 pixelNumber++;
@@ -111,7 +142,7 @@ class Edition {
     }
 
     private void changeColorsValues(int value, char operation) {
-        for (int i = 0; i < Common.getImagePixelsAmount(image); i++) {
+        for (int i = 0; i < imagePixelsAmount(image); i++) {
             arrRGB[i] = doArithmetic(arrRGB[i], value, operation);
         }
     }
@@ -120,24 +151,5 @@ class Edition {
         if (color > 255) color = 255;
         else if (color < 0) color = 0;
         return color;
-    }
-
-    Image getImage() {
-        int imageWidth = (int) image.getWidth();
-        int imageHeight = (int) image.getHeight();
-        WritableImage wr = new WritableImage(imageWidth, imageHeight);
-        PixelWriter pw = wr.getPixelWriter();
-        int Red = 0, Green = 0, Blue = 0;
-
-        for (int i = 0; i < Common.getImagePixelsAmount(image); i++) {
-            for (int j = 0; j < arrRGB[i].length; j++) {
-                int color = changeColorValueIfOutOfBound(arrRGB[i][j]);
-                if (j == 0) Red = color;
-                else if (j == 1) Green = color;
-                else Blue = color;
-            }
-            pw.setArgb(i % imageWidth, i / imageHeight, (0xFF << 24) | Red << 16 | Green << 8 | Blue);
-        }
-        return wr;
     }
 }
